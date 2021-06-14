@@ -10,7 +10,7 @@ services:
       - WEBUI_PORT=8080
     volumes:
       - qbittorrent-config:/config
-      - ~/downloads:/downloads
+      - ~/files:/files
     ports:
       - 6881:6881
       - 6881:6881/udp
@@ -25,7 +25,9 @@ services:
       - TZ=Europe/Amsterdam
     volumes:
       - jellyfin-config:/config
-      - ~/downloads:/downloads
+      - ~/files:/files
+    devices:
+      - /dev/dri:/dev/dri
     ports:
       - 80:8096
     restart: unless-stopped
