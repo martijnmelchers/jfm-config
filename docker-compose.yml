@@ -10,11 +10,25 @@ services:
       - WEBUI_PORT=8080
     volumes:
       - qbittorrent-config:/config
-      - ~:/downloads
+      - ~/downloads:/downloads
     ports:
       - 6881:6881
       - 6881:6881/udp
       - 8080:8080
     restart: unless-stopped
+  jellyfin:
+    image: ghcr.io/linuxserver/jellyfin
+    container_name: jellyfin
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Amsterdam
+    volumes:
+      - jellyfin-config:/config
+      - ~/downloads:/downloads
+    ports:
+      - 80:8096
+    restart: unless-stopped
 volumes:
   qbittorrent-config:
+  jellyfin-config:
