@@ -1,20 +1,40 @@
 version: "3.9"
 services:
-  qbittorrent:
-    image: ghcr.io/linuxserver/qbittorrent
+  proxy:
+    container_name: proxy
+    image: nginx
+    links:
+      - vpn:service
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - 8080:8080
+    depends_on:
+      - torrent
+      - vpn
+  vpn:
+    image: ghcr.io/bubuntux/nordvpn
+    cap_add:
+      - NET_ADMIN               
+    environment:                
+      - USER=~
+      - "PASS=~"
+      - CONNECT=~
+      - TECHNOLOGY=NordLynx
+      - NETWORK=0.0.0.0/0
+  torrent:
     container_name: qbittorrent
+    image: ghcr.io/linuxserver/qbittorrent
+    network_mode: service:vpn
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=Europe/Amsterdam
-      - WEBUI_PORT=8080
     volumes:
       - qbittorrent-config:/config
-      - ~/files:/files
-    ports:
-      - 6881:6881
-      - 6881:6881/udp
-      - 8080:8080
+      - /jellyfin-files:/files
+    depends_on:
+      - vpn
     restart: unless-stopped
   jellyfin:
     image: ghcr.io/linuxserver/jellyfin
@@ -25,12 +45,12 @@ services:
       - TZ=Europe/Amsterdam
     volumes:
       - jellyfin-config:/config
-      - ~/files:/files
+      - /jellyfin-files:/files
     devices:
       - /dev/dri:/dev/dri
     ports:
       - 80:8096
     restart: unless-stopped
 volumes:
-  qbittorrent-config:
   jellyfin-config:
+  qbittorrent-config:
