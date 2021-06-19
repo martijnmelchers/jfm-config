@@ -1,25 +1,13 @@
-version: "3.9"
+version: "3"
 services:
-  proxy:
-    container_name: proxy
-    image: nginx
-    links:
-      - vpn:service
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-    ports:
-      - 8080:8080
-    depends_on:
-      - torrent
-      - vpn
   vpn:
     image: ghcr.io/bubuntux/nordvpn
     cap_add:
-      - NET_ADMIN               
-    environment:                
-      - USER=~
-      - "PASS=~"
-      - CONNECT=~
+      - NET_ADMIN
+    environment:
+      - USER=<secret>
+      - "PASS=<secret>"
+      - CONNECT=p2p
       - TECHNOLOGY=NordLynx
       - NETWORK=0.0.0.0/0
   torrent:
@@ -43,14 +31,37 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=Europe/Amsterdam
+      - JELLYFIN_PublishedServerUrl=https://junkfoodmountain.nl
     volumes:
       - jellyfin-config:/config
       - /jellyfin-files:/files
     devices:
       - /dev/dri:/dev/dri
-    ports:
-      - 80:8096
     restart: unless-stopped
+  swag:
+    image: ghcr.io/linuxserver/swag
+    container_name: swag
+    cap_add:
+      - NET_ADMIN
+    links:
+      - vpn:service
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/London
+      - URL=<secret>
+      - SUBDOMAINS=wildcard
+      - VALIDATION=dns
+      - DNSPLUGIN=cloudflare #optional
+    volumes:
+      - swag-config:/config
+    ports:
+      - 443:443
+      - 80:80 #optional
+    restart: unless-stopped
+    depends_on:
+      - jellyfin
 volumes:
   jellyfin-config:
   qbittorrent-config:
+  swag-config:
