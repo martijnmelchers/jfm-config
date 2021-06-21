@@ -1,4 +1,4 @@
-version: "3"
+version: "3.9"
 services:
   vpn:
     image: ghcr.io/bubuntux/nordvpn
@@ -31,7 +31,7 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=Europe/Amsterdam
-      - JELLYFIN_PublishedServerUrl=https://junkfoodmountain.nl
+      - JELLYFIN_PublishedServerUrl=<secret>
     volumes:
       - jellyfin-config:/config
       - /jellyfin-files:/files
@@ -61,7 +61,61 @@ services:
     restart: unless-stopped
     depends_on:
       - jellyfin
+  sonarr:
+    image: ghcr.io/linuxserver/sonarr
+    container_name: sonarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Amsterdam
+    volumes:
+      - sonarr-config:/config
+      - /jellyfin-files/:/files #optional
+    ports:
+      - 8989:8989
+    restart: unless-stopped
+  jackett:
+    image: ghcr.io/linuxserver/jackett
+    container_name: jackett
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Amsterdam
+      - AUTO_UPDATE=true #optional
+    volumes:
+      - jackett-config:/config
+      - /jellyfin-files/:/files
+    ports:
+      - 9117:9117
+    restart: unless-stopped
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_HTML=${LOG_HTML:-false}
+      - CAPTCHA_SOLVER=${CAPTCHA_SOLVER:-none}
+      - TZ=Europe/Amsterdam
+    ports:
+      - "${PORT:-8191}:8191"
+    restart: unless-stopped
+  radarr:
+    image: ghcr.io/linuxserver/radarr
+    container_name: radarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Amsterdam
+    volumes:
+      - radarr-config:/config
+      - /jellyfin-files/:/files
+    ports:
+      - 7878:7878
+    restart: unless-stopped
 volumes:
   jellyfin-config:
   qbittorrent-config:
   swag-config:
+  jackett-config:
+  sonarr-config:
+  radarr-config:
