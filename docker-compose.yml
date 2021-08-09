@@ -9,7 +9,7 @@ services:
       - TZ=Europe/Amsterdam
       - UMASK=002
       - VPN_ENABLED=true
-      - VPN_LAN_NETWORK=95.217.33.169
+      - VPN_LAN_NETWORK=<ip>
       - VPN_CONF=wg0
       - VPN_ADDITIONAL_PORTS
       - PRIVOXY_ENABLED=false
@@ -51,7 +51,7 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=Europe/Amsterdam
-      - URL=junkfoodmountain.nl
+      - URL=<site>
       - SUBDOMAINS=wildcard
       - VALIDATION=dns
       - DNSPLUGIN=cloudflare #optional
