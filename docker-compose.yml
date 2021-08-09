@@ -1,29 +1,32 @@
 version: "3.9"
 services:
-  vpn:
-    image: ghcr.io/bubuntux/nordvpn
-    cap_add:
-      - NET_ADMIN
-    environment:
-      - USER=<secret>
-      - "PASS=<secret>"
-      - CONNECT=p2p
-      - TECHNOLOGY=NordLynx
-      - NETWORK=0.0.0.0/0
   torrent:
     container_name: qbittorrent
-    image: ghcr.io/linuxserver/qbittorrent
-    network_mode: service:vpn
+    image: hotio/qbittorrent
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=Europe/Amsterdam
+      - UMASK=002
+      - VPN_ENABLED=true
+      - VPN_LAN_NETWORK=95.217.33.169
+      - VPN_CONF=wg0
+      - VPN_ADDITIONAL_PORTS
+      - PRIVOXY_ENABLED=false
+      - TORGUARD_USER=<user>
+      - TORGUARD_PASS=<pass>
     volumes:
       - qbittorrent-config:/config
-      - /jellyfin-files:/files
-    depends_on:
-      - vpn
+      - /jellyfin-downloads/:/downloads
+    cap_add:
+      - NET_ADMIN
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+      - net.ipv6.conf.all.disable_ipv6=1
     restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "8118:8118"
   jellyfin:
     image: ghcr.io/linuxserver/jellyfin
     container_name: jellyfin
@@ -31,10 +34,11 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=Europe/Amsterdam
-      - JELLYFIN_PublishedServerUrl=<secret>
+      - JELLYFIN_PublishedServerUrl=https://junkfoodmountain.nl
     volumes:
       - jellyfin-config:/config
-      - /jellyfin-files:/files
+      - /jellyfin-movies/:/movies
+      - /jellyfin-shows/:/shows
     devices:
       - /dev/dri:/dev/dri
     restart: unless-stopped
@@ -43,13 +47,11 @@ services:
     container_name: swag
     cap_add:
       - NET_ADMIN
-    links:
-      - vpn:service
     environment:
       - PUID=1000
       - PGID=1000
-      - TZ=Europe/London
-      - URL=<secret>
+      - TZ=Europe/Amsterdam
+      - URL=junkfoodmountain.nl
       - SUBDOMAINS=wildcard
       - VALIDATION=dns
       - DNSPLUGIN=cloudflare #optional
@@ -57,7 +59,6 @@ services:
       - swag-config:/config
     ports:
       - 443:443
-      - 80:80 #optional
     restart: unless-stopped
     depends_on:
       - jellyfin
@@ -70,34 +71,10 @@ services:
       - TZ=Europe/Amsterdam
     volumes:
       - sonarr-config:/config
-      - /jellyfin-files/:/files #optional
+      - /jellyfin-shows/:/files
+      - /jellyfin-downloads/:/downloads
     ports:
       - 8989:8989
-    restart: unless-stopped
-  jackett:
-    image: ghcr.io/linuxserver/jackett
-    container_name: jackett
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/Amsterdam
-      - AUTO_UPDATE=true #optional
-    volumes:
-      - jackett-config:/config
-      - /jellyfin-files/:/files
-    ports:
-      - 9117:9117
-    restart: unless-stopped
-  flaresolverr:
-    image: ghcr.io/flaresolverr/flaresolverr:latest
-    container_name: flaresolverr
-    environment:
-      - LOG_LEVEL=${LOG_LEVEL:-info}
-      - LOG_HTML=${LOG_HTML:-false}
-      - CAPTCHA_SOLVER=${CAPTCHA_SOLVER:-none}
-      - TZ=Europe/Amsterdam
-    ports:
-      - "${PORT:-8191}:8191"
     restart: unless-stopped
   radarr:
     image: ghcr.io/linuxserver/radarr
@@ -108,10 +85,67 @@ services:
       - TZ=Europe/Amsterdam
     volumes:
       - radarr-config:/config
-      - /jellyfin-files/:/files
+      - /jellyfin-movies/:/files
+      - /jellyfin-downloads/:/downloads
     ports:
       - 7878:7878
     restart: unless-stopped
+# Skyblock - Disabled
+#  mc:
+#    container_name: mc_skyblock
+#    image: itzg/minecraft-server:java11
+#    ports:
+#      - 25565:25565
+#    environment:
+#      - EULA=TRUE
+#      - TYPE=CURSEFORGE
+#      - MEMORY=32G
+#      - CF_SERVER_MOD=/modpacks/SIMPLE-SERVER-FILES-1.1.6.zip
+#      - USE_AIKAR_FLAGS=true
+#      - LEVEL_TYPE=skyblockbuilder\:custom_skyblock
+#    volumes:
+#      - ./minecraft-data:/data
+#      - ./modpacks:/modpacks
+  mc_vanilla:
+    container_name: mc_vanilla
+    image: itzg/minecraft-server
+    ports:
+      - 25566:25566
+      - 8123:8123
+    environment:
+      - EULA=TRUE
+      - TYPE=PAPER
+      - MEMORY=16G
+      - USE_AIKAR_FLAGS=true
+      - SERVER_PORT=25566
+    volumes:
+      - ./minecraft-vanilla-data:/data
+    tty: true
+    stdin_open: true
+    restart: always
+  prowlarr:
+    image: ghcr.io/linuxserver/prowlarr:develop
+    container_name: prowlarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Amsterdam
+    volumes:
+      - prowlarr-config:/config
+    ports:
+      - 9696:9696
+    restart: unless-stopped
+  unpackerr:
+    container_name: unpackerr
+    image: golift/unpackerr:unstable
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - UMASK=002
+      - TZ=Europe/Amsterdam
+    volumes:
+      - unpackerr-config:/config
+      - /jellyfin-downloads/:/downloads
 volumes:
   jellyfin-config:
   qbittorrent-config:
@@ -119,3 +153,5 @@ volumes:
   jackett-config:
   sonarr-config:
   radarr-config:
+  prowlarr-config:
+  unpackerr-config:
